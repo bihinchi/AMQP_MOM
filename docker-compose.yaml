@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - 15672:15672
+    expose:
+      - 5672
+    networks:
+      - rabbit-net
+    
+  
+  intermediate:
+    build: ./intermediate/
+    depends_on:
+      - rabbitmq
+      - observer
+    networks:
+      - rabbit-net
+  
+  observer:
+    build: ./observer/
+    depends_on:
+      - rabbitmq     
+    volumes:
+      - log_volume:/shared/
+    networks:
+      - rabbit-net
+    
+  original:
+    build: ./original/
+    depends_on:
+      - rabbitmq
+      - observer
+      - intermediate
+    networks:
+      - rabbit-net
+      
+  httpserver:
+    build: ./httpserver/
+    command: "node ./server.js"
+    depends_on:
+      - original
+    ports:
+      - 8080:8080
+    volumes:
+      - log_volume:/shared/
+      
+
+volumes:
+  log_volume:
+    
+networks:
+  rabbit-net:
